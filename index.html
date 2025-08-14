@@ -65,6 +65,17 @@
       content:"";position:absolute;left:28px;bottom:100%;border:6px solid transparent;border-top-color:#111;transform:translateY(6px)
     }
 
+    /* Forzar tooltips visibles al activar el botón */
+    body.show-tooltips .course.locked::after{
+      content:attr(data-tip);
+      position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);
+      background:#111;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.2;box-shadow:var(--shadow);
+      white-space:pre-wrap
+    }
+    body.show-tooltips .course.locked::before{
+      content:"";position:absolute;left:28px;bottom:100%;border:6px solid transparent;border-top-color:#111;transform:translateY(6px)
+    }
+
     .footer{color:var(--muted);font-size:12px;padding:0 22px 24px}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
   </style>
@@ -213,7 +224,7 @@
         const year = Math.ceil(sem/2);
         const col = h('section', {class:'col', role:'group', 'aria-labelledby':`h${sem}`});
         col.appendChild(h('h2', {id:`h${sem}`}, `Año ${year} – Semestre ${sem}`));
-        for (const c of courses.filter(x=>x.sem===sem).sort((a,b)=>a.name.localeCompare(b.name))){
+        for (const c of courses.filter(x=>x.sem===sem)){
           const locked = isLocked(c.id);
           const tip = locked ? `Bloqueada. Falta aprobar:\n• ${unmet(c.id).map(r=>byId[r].name).join('\n• ')}` : '';
           const courseEl = h('div', {class:`course${locked?' locked':''}${state[c.id]? ' done':''}`, tabindex:0, 'data-id':c.id, 'data-tip': tip});
@@ -229,7 +240,13 @@
     }
 
     function onToggle(id){
-      if (isLocked(id)) return;
+      if (isLocked(id)) {
+        const missing = unmet(id).map(r=>byId[r].name).join('
+• ');
+        alert(`Asignatura bloqueada. Falta aprobar:
+• ${missing}`);
+        return;
+      }
       state[id] = !state[id];
       saveState(state);
       render();
@@ -250,12 +267,7 @@
       state = {}; saveState(state); render();
     });
     $('#expandAll').addEventListener('click', () => {
-      // Esta acción solo muestra/cierra tooltips al pasar (no persistente)
       document.body.classList.toggle('show-tooltips');
-      if (document.body.classList.contains('show-tooltips')){
-        // Forzar un pequeño mensaje instructivo
-        alert('Pasa el cursor por las asignaturas bloqueadas para ver qué falta.');
-      }
     });
 
     // Primer render
