@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Malla Curricular Interactiva – Enfermería</title>
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:#ffffff;
+      --primary:#5b8def;
+      --primary-weak:#e7efff;
+      --accent:#4cc9a6;
+      --text:#2c2f36;
+      --muted:#707888;
+      --locked:#d7dbe6;
+      --danger:#ff6565;
+      --shadow:0 6px 20px rgba(100,120,160,.15);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,"Noto Sans",sans-serif;}
+    header{
+      position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#fefefe,rgba(254,254,254,.8));backdrop-filter:saturate(1.2) blur(6px);
+      border-bottom:1px solid #eef0f5;
+    }
+    .wrap{max-width:1400px;margin:0 auto;padding:18px 22px;}
+    .title{display:flex;gap:12px;align-items:center;}
+    .title h1{font-size:clamp(18px,2vw,24px);margin:0}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    button, .pill{
+      border:0;background:var(--primary);color:#fff;padding:10px 14px;border-radius:12px;box-shadow:var(--shadow);cursor:pointer;font-weight:600;
+    }
+    button.secondary{background:var(--accent)}
+    button.ghost{background:var(--primary-weak);color:var(--text);}
+    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .legend .chip{display:inline-flex;gap:8px;align-items:center;padding:6px 10px;border-radius:999px;background:#fff;border:1px solid #eef0f5;color:var(--muted);font-size:12px}
+    .chip .dot{width:10px;height:10px;border-radius:50%}
+    .grid{display:grid;grid-template-columns:repeat(10,minmax(220px,1fr));gap:16px;padding:18px 22px}
+    @media (max-width:1200px){.grid{grid-template-columns:repeat(5,minmax(220px,1fr));}}
+    @media (max-width:700px){.grid{grid-template-columns:repeat(2,minmax(220px,1fr));}}
+    .col{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px}
+    .col h2{margin:4px 6px 8px;font-size:14px;font-weight:800;color:var(--muted);letter-spacing:.3px;text-transform:uppercase}
+    .course{position:relative;background:#fff;border:1px solid #edf0f6;border-radius:14px;padding:12px 12px 12px 44px;box-shadow:0 1px 0 rgba(0,0,0,.02);cursor:pointer;transition:.2s transform,.2s box-shadow}
+    .course:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(100,120,160,.18)}
+    .course.locked{opacity:.6;cursor:not-allowed;background:linear-gradient(0deg,#fafbfe,#fff)}
+    .course.done{border-color:var(--accent);box-shadow:0 0 0 2px rgba(76,201,166,.12)}
+    .course .check{
+      position:absolute;left:10px;top:50%;transform:translateY(-50%);
+      width:22px;height:22px;border-radius:6px;border:2px solid var(--primary);
+      display:grid;place-items:center;background:#fff;font-size:14px;font-weight:900;color:#fff;
+    }
+    .course.done .check{background:var(--accent);border-color:var(--accent)}
+    .course .name{font-size:14px;font-weight:700;line-height:1.25}
+    .course .meta{font-size:12px;color:var(--muted);margin-top:4px}
+
+    /* Tooltip */
+    .course[data-tip]:hover::after{
+      content:attr(data-tip);
+      position:absolute;left:12px;right:12px;bottom:calc(100% + 8px);
+      background:#111;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.2;box-shadow:var(--shadow);
+      white-space:pre-wrap
+    }
+    .course[data-tip]:hover::before{
+      content:"";position:absolute;left:28px;bottom:100%;border:6px solid transparent;border-top-color:#111;transform:translateY(6px)
+    }
+
+    .footer{color:var(--muted);font-size:12px;padding:0 22px 24px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="title">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 3l8 4-8 4-8-4 8-4zm8 6v6l-8 4-8-4V9l8 4 8-4z" fill="currentColor" opacity=".9"/>
+        </svg>
+        <h1>Malla Curricular Interactiva – Enfermería</h1>
+      </div>
+      <div class="controls">
+        <button id="markAll">Marcar todo aprobado</button>
+        <button id="clearAll" class="secondary">Borrar progreso</button>
+        <button id="expandAll" class="ghost">Expandir/colapsar tooltips (activar al pasar)</button>
+        <div class="legend" aria-label="Leyenda">
+          <span class="chip"><span class="dot" style="background:var(--accent)"></span> Aprobada</span>
+          <span class="chip"><span class="dot" style="background:var(--primary)"></span> Disponible</span>
+          <span class="chip"><span class="dot" style="background:var(--locked)"></span> Bloqueada</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="grid" id="grid" aria-live="polite"></main>
+
+  <p class="footer">Tu progreso se guarda automáticamente en este navegador (localStorage). Haz clic en cada asignatura para marcarla como aprobada. Las asignaturas bloqueadas muestran qué falta al pasar el cursor.</p>
+
+  <script>
+  ;(() => {
+    const STORAGE_KEY = 'malla-enfermeria-v1';
+
+    /** Utilidades **/
+    const $ = sel => document.querySelector(sel);
+    const h = (tag, attrs={}, ...children) => {
+      const el = document.createElement(tag);
+      for (const [k,v] of Object.entries(attrs||{})){
+        if (k === 'class') el.className = v; else if(k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v); else if (k === 'dataset') Object.assign(el.dataset, v); else if (v !== null && v !== undefined) el.setAttribute(k, v);
+      }
+      for (const c of children){
+        if (c == null) continue;
+        if (typeof c === 'string') el.appendChild(document.createTextNode(c)); else el.appendChild(c);
+      }
+      return el;
+    };
+    const slug = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$|--+/g,'');
+
+    /** Datos de la malla **/
+    const courses = [
+      // Año 1 - Sem 1
+      { id:'intro-enfermeria', name:'Introducción a la enfermería', year:1, sem:1, prereqs:[] },
+      { id:'anatomia', name:'Anatomía', year:1, sem:1, prereqs:[] },
+      { id:'biologia', name:'Biología', year:1, sem:1, prereqs:[] },
+      { id:'quimica', name:'Química', year:1, sem:1, prereqs:[] },
+      { id:'integrado-matematico-estadistico', name:'Integrado matemático estadístico', year:1, sem:1, prereqs:[] },
+      { id:'socioantropologia', name:'Socioantropología', year:1, sem:1, prereqs:[] },
+      { id:'programa-acompanamiento', name:'Programa de acompañamiento', year:1, sem:1, prereqs:[] },
+
+      // Año 1 - Sem 2
+      { id:'enfermeria-ciclo-vital', name:'Enfermería Ciclo Vital', year:1, sem:2, prereqs:['intro-enfermeria'] },
+      { id:'histoembriologia', name:'Histoembriología', year:1, sem:2, prereqs:['anatomia','biologia'] },
+      { id:'bioquimica', name:'Bioquímica', year:1, sem:2, prereqs:['quimica'] },
+      { id:'enfermeria-digital', name:'Enfermería digital', year:1, sem:2, prereqs:['integrado-matematico-estadistico'] },
+      { id:'psicologia-desarrollo', name:'Psicología del desarrollo', year:1, sem:2, prereqs:[] },
+      { id:'taller-liderazgo-emprendimiento', name:'Taller de liderazgo y emprendimiento', year:1, sem:2, prereqs:[] },
+
+      // Año 2 - Sem 3
+      { id:'proceso-enfermero-i', name:'Proceso Enfermero I', year:2, sem:3, prereqs:['enfermeria-ciclo-vital','histoembriologia'] },
+      { id:'fisiologia', name:'Fisiología', year:2, sem:3, prereqs:['histoembriologia','bioquimica'] },
+      { id:'microbiologia-parasitologia', name:'Microbiología y parasitología', year:2, sem:3, prereqs:['biologia'] },
+      { id:'epidemiologia-salud-publica', name:'Epidemiología y salud pública', year:2, sem:3, prereqs:['enfermeria-ciclo-vital','histoembriologia'] },
+      { id:'pensamiento-critico', name:'Pensamiento crítico', year:2, sem:3, prereqs:['psicologia-desarrollo'] },
+      { id:'metodologia-investigacion', name:'Metodología de la investigación', year:2, sem:3, prereqs:['enfermeria-digital'] },
+      { id:'formacion-general', name:'Formación general', year:2, sem:3, prereqs:[] },
+
+      // Año 2 - Sem 4
+      { id:'proceso-enfermero-ii', name:'Proceso Enfermero II', year:2, sem:4, prereqs:['integrado-matematico-estadistico','proceso-enfermero-i','fisiologia'] },
+      { id:'fisiopatologia', name:'Fisiopatología', year:2, sem:4, prereqs:['enfermeria-ciclo-vital','fisiologia','microbiologia-parasitologia'] },
+      { id:'farmacologia', name:'Farmacología', year:2, sem:4, prereqs:['enfermeria-ciclo-vital','fisiologia'] },
+      { id:'promocion-educacion-salud', name:'Promoción y educación para la salud', year:2, sem:4, prereqs:['epidemiologia-salud-publica'] },
+      { id:'bioetica', name:'Bioética', year:2, sem:4, prereqs:['pensamiento-critico'] },
+      { id:'investigacion-enfermeria', name:'Investigación en enfermería', year:2, sem:4, prereqs:['metodologia-investigacion'] },
+
+      // Año 3 - Sem 5
+      { id:'enfermeria-comunitaria-salud-familiar', name:'Enfermería comunitaria y salud familiar', year:3, sem:5, prereqs:['proceso-enfermero-i','fisiopatologia','farmacologia','promocion-educacion-salud'] },
+      { id:'enfermeria-gerontologica', name:'Enfermería Gerontológica', year:3, sem:5, prereqs:['proceso-enfermero-ii','fisiopatologia','farmacologia','promocion-educacion-salud'] },
+      { id:'enfermeria-mujer-rn', name:'Enfermería de la mujer y recién nacido', year:3, sem:5, prereqs:['proceso-enfermero-ii','fisiopatologia','farmacologia'] },
+      { id:'enfermeria-medico-quirurgica', name:'Enfermería médico quirúrgica', year:3, sem:5, prereqs:['epidemiologia-salud-publica','proceso-enfermero-ii','fisiopatologia','farmacologia'] },
+
+      // Año 3 - Sem 6
+      { id:'gestion-cuidado-adulto-hosp', name:'Gestión del cuidado en el adulto y persona mayor hospitalizada', year:3, sem:6, prereqs:['pensamiento-critico','enfermeria-gerontologica','enfermeria-medico-quirurgica'] },
+      { id:'enfermeria-geriatrica', name:'Enfermería geriátrica', year:3, sem:6, prereqs:['enfermeria-comunitaria-salud-familiar','enfermeria-gerontologica'] },
+      { id:'gestion-cuidado-comunidad', name:'Gestión del cuidado en la comunidad', year:3, sem:6, prereqs:['pensamiento-critico','enfermeria-comunitaria-salud-familiar','enfermeria-gerontologica','enfermeria-mujer-rn'] },
+      { id:'gestion-liderazgo-servicios-enf', name:'Gestión y liderazgo en servicios de enfermería', year:3, sem:6, prereqs:['enfermeria-medico-quirurgica'] },
+      { id:'electivo-profesional-i', name:'Electivo profesional I', year:3, sem:6, prereqs:['proceso-enfermero-ii'] },
+
+      // Año 4 - Sem 7
+      { id:'enfermeria-urgencia', name:'Enfermería en urgencia', year:4, sem:7, prereqs:['bioetica','gestion-cuidado-adulto-hosp'] },
+      { id:'enfermeria-oncologica', name:'Enfermería oncológica', year:4, sem:7, prereqs:['bioetica','gestion-cuidado-adulto-hosp','enfermeria-geriatrica'] },
+      { id:'enfermeria-nna', name:'Enfermería en niña, niño y en el adolescente', year:4, sem:7, prereqs:['bioetica','enfermeria-mujer-rn'] },
+      { id:'enfermeria-salud-mental-psiq', name:'Enfermería en salud mental y psiquiatría', year:4, sem:7, prereqs:['bioetica','gestion-cuidado-adulto-hosp','enfermeria-geriatrica','gestion-cuidado-comunidad'] },
+      { id:'enfermeria-salud-ocupacional', name:'Enfermería en salud ocupacional', year:4, sem:7, prereqs:['bioetica','enfermeria-medico-quirurgica'] },
+      { id:'seminario-investigacion-i', name:'Seminario de investigación I', year:4, sem:7, prereqs:['bioetica','investigacion-enfermeria','gestion-cuidado-adulto-hosp','gestion-cuidado-comunidad'] },
+      { id:'gestion-liderazgo-servicios-salud', name:'Gestión y liderazgo en servicios de salud', year:4, sem:7, prereqs:['enfermeria-comunitaria-salud-familiar','gestion-liderazgo-servicios-enf'] },
+
+      // Año 4 - Sem 8
+      { id:'gestion-cuidado-urgencias', name:'Gestión del cuidado en urgencias', year:4, sem:8, prereqs:['enfermeria-urgencia','enfermeria-nna'] },
+      { id:'enfermeria-salud-intercultural', name:'Enfermería en salud intercultural', year:4, sem:8, prereqs:['bioetica','enfermeria-medico-quirurgica','enfermeria-nna'] },
+      { id:'gestion-cuidado-nino-nina', name:'Gestión del cuidado en el niño y niña', year:4, sem:8, prereqs:['enfermeria-urgencia','enfermeria-nna'] },
+      { id:'seminario-investigacion-ii', name:'Seminario de investigación II', year:4, sem:8, prereqs:['seminario-investigacion-i'] },
+      { id:'electivo-profesional-ii', name:'Electivo profesional II', year:4, sem:8, prereqs:['proceso-enfermero-ii'] },
+
+      // Año 5 - Sem 9
+      { id:'internado-i', name:'Internado I', year:5, sem:9, prereqs:[] },
+      { id:'diplomado-calidad-seguridad', name:'Diplomado en calidad y seguridad en la atención en salud', year:5, sem:9, prereqs:[] },
+
+      // Año 5 - Sem 10
+      { id:'examen-titulo', name:'Examen de título', year:5, sem:10, prereqs:['internado-i'] },
+    ];
+
+    // Indices
+    const byId = Object.fromEntries(courses.map(c=>[c.id,c]));
+    const semesters = Array.from({length:10}, (_,i)=>i+1);
+
+    /** Estado **/
+    const loadState = () => {
+      try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+    };
+    const saveState = (st) => localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+    let state = loadState(); // { [id]: true|false }
+
+    /** Lógica de prerequisitos **/
+    const unmet = (courseId) => {
+      const reqs = byId[courseId].prereqs || [];
+      return reqs.filter(r => !state[r]);
+    };
+    const isLocked = (courseId) => unmet(courseId).length > 0;
+
+    /** Render **/
+    const grid = $('#grid');
+    function render(){
+      grid.innerHTML = '';
+      for (const sem of semesters){
+        const year = Math.ceil(sem/2);
+        const col = h('section', {class:'col', role:'group', 'aria-labelledby':`h${sem}`});
+        col.appendChild(h('h2', {id:`h${sem}`}, `Año ${year} – Semestre ${sem}`));
+        for (const c of courses.filter(x=>x.sem===sem).sort((a,b)=>a.name.localeCompare(b.name))){
+          const locked = isLocked(c.id);
+          const tip = locked ? `Bloqueada. Falta aprobar:\n• ${unmet(c.id).map(r=>byId[r].name).join('\n• ')}` : '';
+          const courseEl = h('div', {class:`course${locked?' locked':''}${state[c.id]? ' done':''}`, tabindex:0, 'data-id':c.id, 'data-tip': tip});
+          courseEl.appendChild(h('div', {class:'check', 'aria-hidden':'true'}, state[c.id] ? '✓' : ''));
+          courseEl.appendChild(h('div', {class:'name'}, c.name));
+          courseEl.appendChild(h('div', {class:'meta'}, c.prereqs.length?`Prerequisitos: ${c.prereqs.map(id=>byId[id].name).join(', ')}`:'Sin prerequisitos'));
+          courseEl.addEventListener('click', () => onToggle(c.id));
+          courseEl.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); onToggle(c.id);} });
+          col.appendChild(courseEl);
+        }
+        grid.appendChild(col);
+      }
+    }
+
+    function onToggle(id){
+      if (isLocked(id)) return;
+      state[id] = !state[id];
+      saveState(state);
+      render();
+    }
+
+    // Controles superiores
+    $('#markAll').addEventListener('click', () => {
+      // Marca en orden respetando dependencias
+      const visited = new Set();
+      const order = [];
+      const dfs = (id) => { if(visited.has(id)) return; visited.add(id); for(const p of byId[id].prereqs) dfs(p); order.push(id); };
+      for (const c of courses) dfs(c.id);
+      for (const id of order) state[id] = true;
+      saveState(state); render();
+    });
+    $('#clearAll').addEventListener('click', () => {
+      if (!confirm('Esto borrará tu progreso guardado. ¿Continuar?')) return;
+      state = {}; saveState(state); render();
+    });
+    $('#expandAll').addEventListener('click', () => {
+      // Esta acción solo muestra/cierra tooltips al pasar (no persistente)
+      document.body.classList.toggle('show-tooltips');
+      if (document.body.classList.contains('show-tooltips')){
+        // Forzar un pequeño mensaje instructivo
+        alert('Pasa el cursor por las asignaturas bloqueadas para ver qué falta.');
+      }
+    });
+
+    // Primer render
+    render();
+  })();
+  </script>
+</body>
+</html>
